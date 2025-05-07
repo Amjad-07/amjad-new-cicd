@@ -33,8 +33,7 @@ steps:
       - '--region=us-central1'
 
 options:
-  logging: CLOUD_LOGGING_ONLY  # Log only to Cloud Logging (no bucket required)
-  logs_bucket_behavior: REGIONAL_USER_OWNED_BUCKET  # Automatically create a regional bucket for logs
+  logging: CLOUD_LOGGING_ONLY  # Log to Cloud Logging only (no bucket required)
 
 # Substitutions
 substitutions:
