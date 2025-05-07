@@ -1,9 +1,11 @@
-from flask import Flask
-app = Flask(__name__)
+const express = require('express');
+const app = express();
+const port = 8080;
 
-@app.route('/')
-def hello_world():
-    return "Hello browser, this code is running from GitHub to Cloud Run"
+app.get('/', (req, res) => {
+  res.send('Hello World from Cloud Run!');
+});
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
