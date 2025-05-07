@@ -33,7 +33,7 @@ steps:
         'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest'
       ]
 
-  # Step 4: Apply Delivery Pipeline and Target configuration
+  # Step 4: Apply Cloud Deploy configuration
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       [
@@ -44,15 +44,13 @@ steps:
       ]
     id: apply-deploy-config
 
- # Step 5: Create Release and save release name
+  # Step 5: Create Release and save release name
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         RELEASE_NAME="amjad-release-$(date +%Y%m%d%H%M%S)"
-        echo "Generated release name: $$RELEASE_NAME"  # Debugging log
-
         echo $$RELEASE_NAME > /workspace/release-name.txt
 
         gcloud deploy releases create $$RELEASE_NAME \
@@ -60,10 +58,6 @@ steps:
           --region=asia-east1 \
           --delivery-pipeline=amjad-pipeline \
           --images=amjad-image=asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest
-        if [ $? -ne 0 ]; then
-          echo "Failed to create release."
-          exit 1
-        fi
     id: create-release
     waitFor: ['apply-deploy-config']
 
