@@ -1,5 +1,8 @@
+substitutions:
+  _RELEASE_NAME: "amjad-release-$(date +%Y%m%d%H%M%S)"
+
 steps:
-  # Step 1: Ensure Artifact Registry exists
+  # Step 1: Ensure Artifact Registry repository exists
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
@@ -25,7 +28,7 @@ steps:
         '.'
       ]
 
-  # Step 3: Push Docker image
+  # Step 3: Push Docker image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
@@ -33,7 +36,7 @@ steps:
         'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest'
       ]
 
-  # Step 4: Apply Cloud Deploy config
+  # Step 4: Apply Cloud Deploy pipeline config
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       [
@@ -50,10 +53,8 @@ steps:
     args:
       - '-c'
       - |
-        RELEASE_NAME="amjad-release-$(date +%Y%m%d%H%M%S)"
-        echo "$RELEASE_NAME" > release_name.txt
-
-        gcloud deploy releases create "$RELEASE_NAME" \
+        echo "Creating release $_RELEASE_NAME..."
+        gcloud deploy releases create $_RELEASE_NAME \
           --project=enhub-cloud-interns \
           --region=asia-east1 \
           --delivery-pipeline=amjad-pipeline \
@@ -61,43 +62,40 @@ steps:
     id: create-release
     waitFor: ['apply-deploy-config']
 
-  # Step 6: Create Rollout
+  # Step 6: Advance rollout
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        RELEASE_NAME=$(cat release_name.txt)
-
+        echo "Advancing rollout for $_RELEASE_NAME..."
         gcloud deploy rollouts advance \
-          --release="$RELEASE_NAME" \
+          --release=$_RELEASE_NAME \
           --region=asia-east1 \
           --project=enhub-cloud-interns \
           --delivery-pipeline=amjad-pipeline
     id: create-rollout
     waitFor: ['create-release']
 
-  # Step 7: Approve Rollout
+  # Step 7: Approve rollout
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        RELEASE_NAME=$(cat release_name.txt)
-
         ROLLOUT_ID=$(gcloud deploy rollouts list \
           --region=asia-east1 \
           --project=enhub-cloud-interns \
           --delivery-pipeline=amjad-pipeline \
-          --release="$RELEASE_NAME" \
+          --release=$_RELEASE_NAME \
           --format="value(rolloutId)")
 
         if [ -z "$ROLLOUT_ID" ]; then
-          echo "No rollout found. Exiting."
+          echo "No rollout found for release $_RELEASE_NAME. Exiting."
           exit 1
         fi
 
-        echo "Approving rollout: $ROLLOUT_ID"
+        echo "Approving rollout $ROLLOUT_ID..."
         gcloud deploy rollouts approve "$ROLLOUT_ID" \
           --region=asia-east1 \
           --project=enhub-cloud-interns
