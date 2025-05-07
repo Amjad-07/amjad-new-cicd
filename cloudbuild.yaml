@@ -1,13 +1,13 @@
 steps:
-  # Step 1: Ensure Artifact Registry repository exists
+  # Step 1: Ensure Artifact Registry exists
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        if ! gcloud artifacts repositories describe vamsi-artifact-cloudrun --location=asia-east1 --project=enhub-cloud-interns; then
+        if ! gcloud artifacts repositories describe amjad-artifact-cloudrun --location=asia-east1 --project=enhub-cloud-interns; then
           echo "Repository doesn't exist. Creating now."
-          gcloud artifacts repositories create vamsi-artifact-cloudrun \
+          gcloud artifacts repositories create amjad-artifact-cloudrun \
             --repository-format=docker \
             --location=asia-east1 \
             --project=enhub-cloud-interns
@@ -21,19 +21,19 @@ steps:
       [
         'build',
         '-t',
-        'asia-east1-docker.pkg.dev/enhub-cloud-interns/vamsi-artifact-cloudrun/vamsi-image:latest',
+        'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest',
         '.'
       ]
 
-  # Step 3: Push Docker image to Artifact Registry
+  # Step 3: Push Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'push',
-        'asia-east1-docker.pkg.dev/enhub-cloud-interns/vamsi-artifact-cloudrun/vamsi-image:latest'
+        'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest'
       ]
 
-  # Step 4: Apply Cloud Deploy Delivery Pipeline and Target configuration
+  # Step 4: Apply Cloud Deploy config
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       [
@@ -44,91 +44,67 @@ steps:
       ]
     id: apply-deploy-config
 
-  # Step 5: Check if Release exists, if not, create it
+  # Step 5: Create Release
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        RELEASE_NAME="vamsi-release-$(date +%Y%m%d%H%M%S)"
-        RELEASE_EXISTS=$$(gcloud deploy releases list \
+        RELEASE_NAME="amjad-release-$(date +%Y%m%d%H%M%S)"
+        echo "$RELEASE_NAME" > release_name.txt
+
+        gcloud deploy releases create "$RELEASE_NAME" \
           --project=enhub-cloud-interns \
           --region=asia-east1 \
-          --filter="name:$$RELEASE_NAME" \
-          --format="value(name)")
-
-        if [ -z "$$RELEASE_EXISTS" ]; then
-          echo "Release doesn't exist. Creating now."
-          gcloud deploy releases create $$RELEASE_NAME \
-            --project=enhub-cloud-interns \
-            --region=asia-east1 \
-            --delivery-pipeline=vamsi-pipeline \
-            --images=vamsi-image=asia-east1-docker.pkg.dev/enhub-cloud-interns/vamsi-artifact-cloudrun/vamsi-image:latest
-        else
-          echo "Release already exists."
-        fi
+          --delivery-pipeline=amjad-pipeline \
+          --images=amjad-image=asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest
     id: create-release
     waitFor: ['apply-deploy-config']
 
-  # Step 6: Check if Rollout exists, if not, create it
+  # Step 6: Create Rollout
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Ensure the release name is consistently used
-        RELEASE_NAME="vamsi-release-$(date +%Y%m%d%H%M%S)"
-        
-        echo "Release name is: $$RELEASE_NAME"  # Debugging the release name
-        
-        ROLLOUT_EXISTS=$$(gcloud deploy rollouts list \
-          --project=enhub-cloud-interns \
-          --region=asia-east1 \
-          --delivery-pipeline=vamsi-pipeline \
-          --release=$$RELEASE_NAME \
-          --filter="release:$$RELEASE_NAME" \
-          --format="value(rolloutId)")
+        RELEASE_NAME=$(cat release_name.txt)
 
-        if [ -z "$$ROLLOUT_EXISTS" ]; then
-          echo "Rollout doesn't exist. Creating now."
-          gcloud deploy rollouts advance \
-            --release=$$RELEASE_NAME \
-            --region=asia-east1 \
-            --project=enhub-cloud-interns \
-            --delivery-pipeline=vamsi-pipeline
-        else
-          echo "Rollout already exists."
-        fi
+        gcloud deploy rollouts advance \
+          --release="$RELEASE_NAME" \
+          --region=asia-east1 \
+          --project=enhub-cloud-interns \
+          --delivery-pipeline=amjad-pipeline
     id: create-rollout
     waitFor: ['create-release']
 
-  # Step 7: Approve the rollout
+  # Step 7: Approve Rollout
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        ROLLOUT_ID=$$(gcloud deploy rollouts list \
+        RELEASE_NAME=$(cat release_name.txt)
+
+        ROLLOUT_ID=$(gcloud deploy rollouts list \
           --region=asia-east1 \
           --project=enhub-cloud-interns \
-          --delivery-pipeline=vamsi-pipeline \
-          --release=$$RELEASE_NAME \
-          --filter="release:$$RELEASE_NAME" \
+          --delivery-pipeline=amjad-pipeline \
+          --release="$RELEASE_NAME" \
           --format="value(rolloutId)")
 
-        if [ -z "$$ROLLOUT_ID" ]; then
-          echo "No rollout found for release $$RELEASE_NAME. Exiting."
+        if [ -z "$ROLLOUT_ID" ]; then
+          echo "No rollout found. Exiting."
           exit 1
         fi
 
-        echo "Approving rollout $$ROLLOUT_ID"
-        gcloud deploy rollouts approve "$$ROLLOUT_ID" \
+        echo "Approving rollout: $ROLLOUT_ID"
+        gcloud deploy rollouts approve "$ROLLOUT_ID" \
           --region=asia-east1 \
           --project=enhub-cloud-interns
     waitFor: ['create-rollout']
 
 images:
-  - 'asia-east1-docker.pkg.dev/enhub-cloud-interns/vamsi-artifact-cloudrun/vamsi-image:latest'
+  - 'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
