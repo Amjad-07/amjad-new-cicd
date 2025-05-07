@@ -1,27 +1,46 @@
 # cloudbuild.yaml
 
 steps:
-  # Step 1: Build Docker Image
+  # Step 1: Check if the Delivery Pipeline exists, and create it if it doesn't
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
+    id: 'Check and Create Pipeline'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        PIPELINE_NAME="my-python-app-pipeline"
+        REGION="us-central1"
+        PROJECT="enhub-cloud-interns"
+        
+        # Check if the delivery pipeline exists
+        if ! gcloud deploy delivery-pipelines describe $PIPELINE_NAME --region=$REGION --project=$PROJECT; then
+          echo "Pipeline does not exist. Creating pipeline..."
+          gcloud deploy delivery-pipelines create $PIPELINE_NAME --region=$REGION --project=$PROJECT
+        else
+          echo "Pipeline $PIPELINE_NAME already exists."
+        fi
+
+  # Step 2: Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/enhub-cloud-interns/my-python-app', '.']
 
-  # Step 2: Push Docker Image to Container Registry
+  # Step 3: Push Docker Image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/enhub-cloud-interns/my-python-app']
 
-  # Step 3: Create a Release in Cloud Deploy
+  # Step 4: Create a Release in Cloud Deploy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     args:
       - 'gcloud'
       - 'deploy'
       - 'releases'
       - 'create'
-      - 'my-python-app-release'  # Add a release name here
-      - '--images=gcr.io/enhub-cloud-interns/my-python-app=gcr.io/enhub-cloud-interns/my-python-app'  # Correct syntax for images flag
-      - '--delivery-pipeline=my-python-app-pipeline'  # Correct argument for pipeline
+      - 'my-python-app-release'
+      - '--images=gcr.io/enhub-cloud-interns/my-python-app=gcr.io/enhub-cloud-interns/my-python-app'
+      - '--delivery-pipeline=my-python-app-pipeline'
       - '--region=us-central1'
 
-  # Step 4: Trigger the Rollout in Cloud Deploy
+  # Step 5: Trigger the Rollout in Cloud Deploy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     args:
       - 'gcloud'
