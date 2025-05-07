@@ -1,0 +1,17 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: vamsi-service
+build:
+  artifacts:
+    - image: asia-east1-docker.pkg.dev/enhub-cloud-interns/vamsi-artifact-cloudrun/vamsi-image
+      context: .
+      docker:
+        dockerfile: Dockerfile
+  tagPolicy:
+    sha256: {}
+deploy:
+  cloudrun:
+    projectId: enhub-cloud-interns
+    region: asia-east1
+    serviceName: vamsi-service
