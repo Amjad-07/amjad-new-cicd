@@ -2,21 +2,13 @@ apiVersion: deploy.cloud.google.com/v1
 kind: DeliveryPipeline
 metadata:
   name: amjad-pipeline
-  annotations:
-    clouddeploy.googleapis.com/location: asia-east1
-description: Cloud Deploy pipeline for Amjad service
-serialPipeline:
+  region: asia-east1
+spec:
   stages:
-    - targetId: amjad-deploy-target-1
-
----
-
-apiVersion: deploy.cloud.google.com/v1
-kind: Target
-metadata:
-  name: amjad-deploy-target-1
-  annotations:
-    clouddeploy.googleapis.com/location: asia-east1
-description: Cloud Run target for Amjad service in asia-east1
-run:
-  location: projects/enhub-cloud-interns/locations/asia-east1
+  - targetId: amjad-target
+    profiles: []
+  targets:
+  - id: amjad-target
+    run:
+      location: asia-east1
+      service: amjad-cloudrun-service
