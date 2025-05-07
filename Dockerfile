@@ -1,18 +1,19 @@
-# Use an official Node.js runtime as the base image
-FROM node:14
+# Dockerfile
+
+# Use a Python 3.9 image as a base image
+FROM python:3.9-slim
 
 # Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy the package.json and install dependencies
-COPY package*.json ./
-RUN npm install
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-# Copy the rest of the application files
-COPY . .
+# Install dependencies from requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port on which the app will run
+# Expose port 8080 for the app
 EXPOSE 8080
 
-# Command to start the app
-CMD ["node", "server.js"]
+# Set the default command to run the app
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
