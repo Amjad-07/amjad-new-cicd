@@ -1,23 +1,22 @@
-# Cloud Deploy Delivery Pipeline
 apiVersion: deploy.cloud.google.com/v1
 kind: DeliveryPipeline
 metadata:
-  name: vamsi-pipeline
+  name: amjad-pipeline
   annotations:
     clouddeploy.googleapis.com/location: asia-east1
-description: Cloud Deploy pipeline for vamsi service
+description: Cloud Deploy pipeline for Amjad service
 serialPipeline:
   stages:
-    - targetId: vamsi-deploy-target-1
+    - targetId: amjad-deploy-target-1
 
 ---
-# Cloud Deploy Target for Cloud Run Deployment
+
 apiVersion: deploy.cloud.google.com/v1
 kind: Target
 metadata:
-  name: vamsi-deploy-target-1
+  name: amjad-deploy-target-1
   annotations:
     clouddeploy.googleapis.com/location: asia-east1
-description: Cloud Run target in asia-east1
+description: Cloud Run target for Amjad service in asia-east1
 run:
   location: projects/enhub-cloud-interns/locations/asia-east1
