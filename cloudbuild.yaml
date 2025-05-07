@@ -16,7 +16,7 @@ steps:
       - 'deploy'
       - 'releases'
       - 'create'
-      - '--images=gcr.io/enhub-cloud-interns/my-python-app'  # Correct argument for specifying image
+      - '--images=gcr.io/enhub-cloud-interns/my-python-app=gcr.io/enhub-cloud-interns/my-python-app'  # Correct syntax for images flag
       - '--delivery-pipeline=my-python-app-pipeline'       # Correct argument for pipeline
 
   # Step 4: Trigger the Rollout in Cloud Deploy
