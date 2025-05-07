@@ -10,26 +10,24 @@ steps:
     args: ['push', 'gcr.io/enhub-cloud-interns/my-python-app']
 
   # Step 3: Create a Release in Cloud Deploy
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     args:
       - 'gcloud'
       - 'deploy'
       - 'releases'
       - 'create'
-      - 'my-python-app-release'
-      - '--image=gcr.io/enhub-cloud-interns/my-python-app'
-      - '--pipeline=my-python-app-pipeline'
-      - '--region=us-central1'
+      - '--images=gcr.io/enhub-cloud-interns/my-python-app'  # Correct argument for specifying image
+      - '--delivery-pipeline=my-python-app-pipeline'       # Correct argument for pipeline
 
   # Step 4: Trigger the Rollout in Cloud Deploy
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     args:
       - 'gcloud'
       - 'deploy'
       - 'rollouts'
       - 'create'
       - '--release=my-python-app-release'
-      - '--pipeline=my-python-app-pipeline'
+      - '--delivery-pipeline=my-python-app-pipeline'
       - '--region=us-central1'
 
 options:
