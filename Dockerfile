@@ -1,17 +1,18 @@
-# Use an official Python base image
-FROM python:3.9-slim
+# Use an official Node.js runtime as the base image
+FROM node:14
 
-# Set working directory inside container
-WORKDIR /app
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
-# Copy code to the container
+# Copy the package.json and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of the application files
 COPY . .
 
-# Install Flask
-RUN pip install flask
-
-# Expose the port
+# Expose the port on which the app will run
 EXPOSE 8080
 
-# Run the app
-CMD ["python", "app.py"]
+# Command to start the app
+CMD ["node", "server.js"]
