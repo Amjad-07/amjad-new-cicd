@@ -1,8 +1,5 @@
-substitutions:
-  _RELEASE_NAME: "amjad-release-$(date +%Y%m%d%H%M%S)"
-
 steps:
-  # Step 1: Ensure Artifact Registry repository exists
+  # Step 1: Ensure Artifact Registry exists
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
@@ -36,7 +33,7 @@ steps:
         'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest'
       ]
 
-  # Step 4: Apply Cloud Deploy pipeline config
+  # Step 4: Apply Cloud Deploy pipeline and target config
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       [
@@ -47,55 +44,60 @@ steps:
       ]
     id: apply-deploy-config
 
-  # Step 5: Create Release
+  # Step 5: Create dynamic release name and store in file
   - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
+    id: set-release-name
+    entrypoint: bash
     args:
       - '-c'
       - |
-        echo "Creating release $_RELEASE_NAME..."
-        gcloud deploy releases create $_RELEASE_NAME \
+        RELEASE_NAME="amjad-release-$(date +%Y%m%d%H%M%S)"
+        echo "RELEASE_NAME=$RELEASE_NAME" >> /workspace/env.txt
+
+  # Step 6: Create release
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: create-release
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        source /workspace/env.txt
+        gcloud deploy releases create "$RELEASE_NAME" \
           --project=enhub-cloud-interns \
           --region=asia-east1 \
           --delivery-pipeline=amjad-pipeline \
           --images=amjad-image=asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest
-    id: create-release
-    waitFor: ['apply-deploy-config']
+    waitFor: ['apply-deploy-config', 'set-release-name']
 
-  # Step 6: Advance rollout
+  # Step 7: Create rollout
   - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
+    id: create-rollout
+    entrypoint: bash
     args:
       - '-c'
       - |
-        echo "Advancing rollout for $_RELEASE_NAME..."
+        source /workspace/env.txt
         gcloud deploy rollouts advance \
-          --release=$_RELEASE_NAME \
+          --release="$RELEASE_NAME" \
           --region=asia-east1 \
           --project=enhub-cloud-interns \
           --delivery-pipeline=amjad-pipeline
-    id: create-rollout
     waitFor: ['create-release']
 
-  # Step 7: Approve rollout
+  # Step 8: Approve rollout
   - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
+    entrypoint: bash
     args:
       - '-c'
       - |
+        source /workspace/env.txt
         ROLLOUT_ID=$(gcloud deploy rollouts list \
           --region=asia-east1 \
           --project=enhub-cloud-interns \
           --delivery-pipeline=amjad-pipeline \
-          --release=$_RELEASE_NAME \
+          --release="$RELEASE_NAME" \
           --format="value(rolloutId)")
-
-        if [ -z "$ROLLOUT_ID" ]; then
-          echo "No rollout found for release $_RELEASE_NAME. Exiting."
-          exit 1
-        fi
-
-        echo "Approving rollout $ROLLOUT_ID..."
+        echo "Approving rollout $ROLLOUT_ID"
         gcloud deploy rollouts approve "$ROLLOUT_ID" \
           --region=asia-east1 \
           --project=enhub-cloud-interns
