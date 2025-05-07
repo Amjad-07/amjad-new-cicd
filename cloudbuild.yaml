@@ -16,8 +16,10 @@ steps:
       - 'deploy'
       - 'releases'
       - 'create'
+      - 'my-python-app-release'  # Add a release name here
       - '--images=gcr.io/enhub-cloud-interns/my-python-app=gcr.io/enhub-cloud-interns/my-python-app'  # Correct syntax for images flag
-      - '--delivery-pipeline=my-python-app-pipeline'       # Correct argument for pipeline
+      - '--delivery-pipeline=my-python-app-pipeline'  # Correct argument for pipeline
+      - '--region=us-central1'
 
   # Step 4: Trigger the Rollout in Cloud Deploy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
