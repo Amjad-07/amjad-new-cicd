@@ -1,17 +1,14 @@
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta1
 kind: Config
 metadata:
-  name: vamsi-service
+  name: amjad-service
 build:
   artifacts:
-    - image: asia-east1-docker.pkg.dev/enhub-cloud-interns/vamsi-artifact-cloudrun/vamsi-image
-      context: .
-      docker:
-        dockerfile: Dockerfile
-  tagPolicy:
-    sha256: {}
+    - image: asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image
+  googleCloudBuild:
+    projectId: enhub-cloud-interns
 deploy:
   cloudrun:
     projectId: enhub-cloud-interns
     region: asia-east1
-    serviceName: vamsi-service
+    serviceName: amjad-service
