@@ -54,9 +54,5 @@ steps:
 options:
   logging: CLOUD_LOGGING_ONLY  # Log to Cloud Logging only (no bucket required)
 
-# Substitutions
-substitutions:
-  _SERVICE_ACCOUNT: "1064351983714-compute@developer.gserviceaccount.com"
-
 # Timeout for build (optional)
 timeout: "1200s"
