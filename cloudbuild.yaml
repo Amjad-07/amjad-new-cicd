@@ -1,67 +1,28 @@
 steps:
-  # Step 1: Ensure Artifact Registry repository exists
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-repo/amjad-image:$COMMIT_SHA', '.']
+
+  # Step 2: Push Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-repo/amjad-image:$COMMIT_SHA']
+
+  # Step 3: Deploy to Cloud Run via Cloud Deploy (generate release name with timestamp)
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        if ! gcloud artifacts repositories describe amjad-artifact-cloudrun --location=asia-east1 --project=enhub-cloud-interns; then
-          echo "Repository doesn't exist. Creating now."
-          gcloud artifacts repositories create amjad-artifact-cloudrun \
-            --repository-format=docker \
-            --location=asia-east1 \
-            --project=enhub-cloud-interns
-        else
-          echo "Repository already exists."
-        fi
-
-  # Step 2: Build Docker image
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      [
-        'build',
-        '-t',
-        'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest',
-        '.'
-      ]
-
-  # Step 3: Push Docker image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      [
-        'push',
-        'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest'
-      ]
-
-  # Step 4: Apply Cloud Deploy Delivery Pipeline and Target configuration
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      [
-        'deploy', 'apply',
-        '--file=clouddeploy.yaml',
-        '--region=asia-east1',
-        '--project=enhub-cloud-interns'
-      ]
-    id: apply-deploy-config
-
-  # Step 5: Create Release
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        RELEASE_NAME="amjad-release-$$(date +%Y%m%d%H%M%S)"
-        echo "Creating release: $$RELEASE_NAME"
-        gcloud deploy releases create "$$RELEASE_NAME" \
-          --project=enhub-cloud-interns \
-          --region=asia-east1 \
+        RELEASE_NAME="amjad-release-$(date +%Y%m%d%H%M%S)"
+        echo "$RELEASE_NAME" > /workspace/release_name.txt
+        gcloud deploy releases create "$RELEASE_NAME" \
           --delivery-pipeline=amjad-pipeline \
-          --images=amjad-image=asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest
-        echo "$$RELEASE_NAME" > /workspace/release_name.txt
+          --region=asia-east1 \
+          --images=amjad-image=asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-repo/amjad-image:$COMMIT_SHA \
+          --project=enhub-cloud-interns
     id: create-release
-    waitFor: ['apply-deploy-config']
 
-  # Step 6: Create Rollout
+  # Step 4: Create Rollout manually (instead of advancing)
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
@@ -69,7 +30,7 @@ steps:
       - |
         RELEASE_NAME=$$(cat /workspace/release_name.txt)
         echo "Creating rollout for release: $$RELEASE_NAME"
-        gcloud deploy rollouts advance \
+        gcloud deploy rollouts create "rollout-$$RELEASE_NAME" \
           --release="$$RELEASE_NAME" \
           --region=asia-east1 \
           --project=enhub-cloud-interns \
@@ -77,33 +38,5 @@ steps:
     id: create-rollout
     waitFor: ['create-release']
 
-  # Step 7: Approve the rollout
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        RELEASE_NAME=$$(cat /workspace/release_name.txt)
-        ROLLOUT_ID=$$(gcloud deploy rollouts list \
-          --region=asia-east1 \
-          --project=enhub-cloud-interns \
-          --delivery-pipeline=amjad-pipeline \
-          --release="$$RELEASE_NAME" \
-          --format="value(rolloutId)")
-        if [ -z "$$ROLLOUT_ID" ]; then
-          echo "No rollout found for release $$RELEASE_NAME"
-          exit 1
-        fi
-        echo "Approving rollout: $$ROLLOUT_ID"
-        gcloud deploy rollouts approve "$$ROLLOUT_ID" \
-          --region=asia-east1 \
-          --project=enhub-cloud-interns
-    waitFor: ['create-rollout']
-
 images:
-  - 'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-artifact-cloudrun/amjad-image:latest'
-
-options:
-  logging: CLOUD_LOGGING_ONLY
-
-serviceAccount: 1064351983714-compute@developer.gserviceaccount.com
+  - 'asia-east1-docker.pkg.dev/enhub-cloud-interns/amjad-repo/amjad-image:$COMMIT_SHA'
