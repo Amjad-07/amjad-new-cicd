@@ -62,34 +62,33 @@ steps:
     waitFor: ['apply-deploy-config']
 
   # Step 6: Advance rollout
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
-  args:
-    - '-c'
-    - |
-      RELEASE_NAME=$$(cat /workspace/release-name.txt)
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        RELEASE_NAME=$$(cat /workspace/release-name.txt)
 
-      ROLLOUT_ID=$$(gcloud deploy rollouts list \
-        --region=asia-east1 \
-        --project=enhub-cloud-interns \
-        --delivery-pipeline=amjad-pipeline \
-        --release=$$RELEASE_NAME \
-        --format="value(rolloutId)")
+        ROLLOUT_ID=$$(gcloud deploy rollouts list \
+          --region=asia-east1 \
+          --project=enhub-cloud-interns \
+          --delivery-pipeline=amjad-pipeline \
+          --release=$$RELEASE_NAME \
+          --format="value(rolloutId)")
 
-      if [ -z "$$ROLLOUT_ID" ]; then
-        echo "No rollout ID found. Cannot advance."
-        exit 1
-      fi
+        if [ -z "$$ROLLOUT_ID" ]; then
+          echo "No rollout ID found. Cannot advance."
+          exit 1
+        fi
 
-      echo "Advancing rollout $$ROLLOUT_ID"
-      gcloud deploy rollouts advance $$ROLLOUT_ID \
-        --release=$$RELEASE_NAME \
-        --region=asia-east1 \
-        --project=enhub-cloud-interns \
-        --delivery-pipeline=amjad-pipeline
-  id: create-rollout
-  waitFor: ['create-release']
-
+        echo "Advancing rollout $$ROLLOUT_ID"
+        gcloud deploy rollouts advance $$ROLLOUT_ID \
+          --release=$$RELEASE_NAME \
+          --region=asia-east1 \
+          --project=enhub-cloud-interns \
+          --delivery-pipeline=amjad-pipeline
+    id: create-rollout
+    waitFor: ['create-release']
 
   # Step 7: Approve rollout
   - name: 'gcr.io/cloud-builders/gcloud'
