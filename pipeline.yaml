@@ -1,0 +1,9 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: my-python-app-pipeline
+description: Pipeline for deploying my Python app to Cloud Run
+serialPipeline:
+  stages:
+    - targetId: my-cloud-run-target
+      profiles: []
