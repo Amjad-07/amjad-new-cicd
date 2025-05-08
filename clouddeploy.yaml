@@ -1,14 +1,14 @@
 apiVersion: deploy.cloud.google.com/v1alpha1
 kind: Pipeline
 metadata:
-  name: $$_PIPELINE_NAME
+  name: my-python-app-pipeline
 spec:
   stages:
     - name: "deploy"
       targets:
-        - name: $$_TARGET_NAME  # Cloud Run target environment
+        - name: "my-cloud-run-target"  # Cloud Run target environment
       release:
-        name: $$_RELEASE_NAME  # Release name for the rollout
+        name: "my-python-app-release"  # Release name for the rollout
         description: "My Python app release rollout"
         resources:
           - name: "my-python-app-service"  # Cloud Run service to be deployed
@@ -17,7 +17,7 @@ spec:
   rollout:
     rolloutStrategy: "STANDARD"  # Rollout strategy: "STANDARD" or "CANARY"
     rolloutStart:
-      releaseName: $$_RELEASE_NAME
+      releaseName: "my-python-app-release"
       deployTo:
         environments:
           - "prod"  # Target environment, like "prod" or others
