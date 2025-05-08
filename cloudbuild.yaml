@@ -1,13 +1,12 @@
 substitutions:
   _PIPELINE_NAME: 'my-python-app-pipeline'
-  _TARGET_NAME: 'my-cloud-run-target'
-  _REGION: 'us-central1'
-  _PROJECT_ID: 'enhub-cloud-interns'  # Your project ID
+  _TARGET_NAME: 'my-cloud-run-target'  # Specify your Cloud Run target here
+  _REGION: 'asia-east1'  # Region where Cloud Deploy is set up
   _RELEASE_NAME: 'my-python-app-release'
-  _IMAGE_PATH: 'gcr.io/$(PROJECT_ID)/my-python-app'
+  _IMAGE_PATH: 'gcr.io/$PROJECT_ID/my-python-app'  # Using $PROJECT_ID for dynamic project name
 
 steps:
-  # Step 1: Apply the Delivery Pipeline and Target
+  # Step 1: Apply the Delivery Pipeline and Target configuration
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     id: 'Apply Pipeline and Target'
     args:
@@ -16,7 +15,7 @@ steps:
       - 'apply'
       - '--file=clouddeploy.yaml'
       - '--region=$$_REGION'
-      - '--project=$(PROJECT_ID)'
+      - '--project=$PROJECT_ID'
 
   # Step 2: Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
@@ -37,7 +36,7 @@ steps:
       - '--images=my-python-app=$$_IMAGE_PATH'
       - '--delivery-pipeline=$$_PIPELINE_NAME'
       - '--region=$$_REGION'
-      - '--project=$(PROJECT_ID)'
+      - '--project=$PROJECT_ID'
 
   # Step 5: Trigger the Rollout in Cloud Deploy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
@@ -49,7 +48,7 @@ steps:
       - '--release=$$_RELEASE_NAME'
       - '--delivery-pipeline=$$_PIPELINE_NAME'
       - '--region=$$_REGION'
-      - '--project=$(PROJECT_ID)'
+      - '--project=$PROJECT_ID'
 
 options:
   logging: CLOUD_LOGGING_ONLY
