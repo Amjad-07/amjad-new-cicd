@@ -1,67 +1,62 @@
+substitutions:
+  _PIPELINE_NAME: 'my-python-app-pipeline'
+  _TARGET_NAME: 'my-cloud-run-target'
+  _REGION: 'us-central1'
+  _PROJECT_ID: 'enhub-cloud-interns'
+  _RELEASE_NAME: 'my-python-app-release'
+  _IMAGE_PATH: 'gcr.io/$$PROJECT_ID/my-python-app'
+
 steps:
-  # Step 1: Check and Create Cloud Deploy Target (Cloud Run)
+  # Step 1: Create the Delivery Pipeline if it doesn't exist
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-    id: 'Check and Create Target'
+    id: 'Check and Create Pipeline'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        TARGET_NAME="my-cloud-run-target"
-        REGION="us-central1"
-        PROJECT="enhub-cloud-interns"
-
-        if ! gcloud deploy targets describe $TARGET_NAME --region=$REGION --project=$PROJECT 2>/dev/null; then
-          echo "Target does not exist. Creating target..."
-          gcloud deploy targets create $TARGET_NAME \
-            --region=$REGION \
-            --run-location=$REGION \
-            --project=$PROJECT
+        if ! gcloud deploy delivery-pipelines describe $$ _PIPELINE_NAME --region=$$_REGION --project=$$_PROJECT_ID; then
+          echo "Pipeline does not exist. Creating pipeline..."
+          gcloud deploy delivery-pipelines create $$_PIPELINE_NAME \
+            --region=$$_REGION \
+            --project=$$_PROJECT_ID
         else
-          echo "Target $TARGET_NAME already exists."
+          echo "Pipeline $$_PIPELINE_NAME already exists."
         fi
 
-  # Step 2: Apply Delivery Pipeline Configuration (pipeline.yaml)
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-    id: 'Apply Pipeline'
-    args:
-      [
-        'gcloud', 'deploy', 'apply',
-        '--file=pipeline.yaml',
-        '--region=us-central1',
-        '--project=enhub-cloud-interns'
-      ]
-
-  # Step 3: Build Docker Image
+  # Step 2: Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/enhub-cloud-interns/my-python-app', '.']
+    args: ['build', '-t', '$$_IMAGE_PATH', '.']
 
-  # Step 4: Push Docker Image
+  # Step 3: Push Docker Image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/enhub-cloud-interns/my-python-app']
+    args: ['push', '$$_IMAGE_PATH']
 
-  # Step 5: Create a Release in Cloud Deploy
+  # Step 4: Create a Release in Cloud Deploy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     args:
       - 'gcloud'
       - 'deploy'
       - 'releases'
       - 'create'
-      - 'my-python-app-release'
-      - '--images=gcr.io/enhub-cloud-interns/my-python-app=gcr.io/enhub-cloud-interns/my-python-app'
-      - '--delivery-pipeline=my-python-app-pipeline'
-      - '--region=us-central1'
+      - '$$_RELEASE_NAME'
+      - '--images=my-python-app=$$_IMAGE_PATH'
+      - '--delivery-pipeline=$$_PIPELINE_NAME'
+      - '--region=$$_REGION'
+      - '--project=$$_PROJECT_ID'
 
-  # Step 6: Trigger the Rollout
+  # Step 5: Trigger the Rollout in Cloud Deploy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     args:
       - 'gcloud'
       - 'deploy'
       - 'rollouts'
       - 'create'
-      - '--release=my-python-app-release'
-      - '--delivery-pipeline=my-python-app-pipeline'
-      - '--region=us-central1'
+      - '--release=$$_RELEASE_NAME'
+      - '--delivery-pipeline=$$_PIPELINE_NAME'
+      - '--region=$$_REGION'
+      - '--project=$$_PROJECT_ID'
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
 timeout: "1200s"
