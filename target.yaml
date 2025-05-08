@@ -1,0 +1,17 @@
+apiVersion: deploy.cloud.google.com/v1alpha1
+kind: Target
+metadata:
+  name: $$_TARGET_NAME
+spec:
+  target:
+    name: "cloud-run"
+    type: "cloudrun"
+    cloudrun:
+      region: $$_REGION
+      service:
+        name: "my-python-app-service"  # Cloud Run service name
+        namespace: "my-namespace"      # Your Cloud Run namespace (if needed)
+      resources:
+        cpu: "1"
+        memory: "2Gi"
+        replicas: 1
