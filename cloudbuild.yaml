@@ -7,21 +7,16 @@ substitutions:
   _IMAGE_PATH: 'gcr.io/$$PROJECT_ID/my-python-app'
 
 steps:
-  # Step 1: Create the Delivery Pipeline if it doesn't exist
+  # Step 1: Apply the Delivery Pipeline and Target
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
-    id: 'Check and Create Pipeline'
-    entrypoint: 'bash'
+    id: 'Apply Pipeline and Target'
     args:
-      - '-c'
-      - |
-        if ! gcloud deploy delivery-pipelines describe $$ _PIPELINE_NAME --region=$$_REGION --project=$$_PROJECT_ID; then
-          echo "Pipeline does not exist. Creating pipeline..."
-          gcloud deploy delivery-pipelines create $$_PIPELINE_NAME \
-            --region=$$_REGION \
-            --project=$$_PROJECT_ID
-        else
-          echo "Pipeline $$_PIPELINE_NAME already exists."
-        fi
+      - 'gcloud'
+      - 'deploy'
+      - 'apply'
+      - '--file=clouddeploy.yaml'
+      - '--region=$$_REGION'
+      - '--project=$$_PROJECT_ID'
 
   # Step 2: Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
