@@ -1,0 +1,27 @@
+apiVersion: deploy.cloud.google.com/v1alpha1
+kind: Pipeline
+metadata:
+  name: $$_PIPELINE_NAME
+spec:
+  stages:
+    - name: "deploy"
+      targets:
+        - name: $$_TARGET_NAME  # Cloud Run target environment
+      release:
+        name: $$_RELEASE_NAME  # Release name for the rollout
+        description: "My Python app release rollout"
+        resources:
+          - name: "my-python-app-service"  # Cloud Run service to be deployed
+            type: "cloudrun"  # Cloud Run service type
+
+  rollout:
+    rolloutStrategy: "STANDARD"  # Rollout strategy: "STANDARD" or "CANARY"
+    rolloutStart:
+      releaseName: $$_RELEASE_NAME
+      deployTo:
+        environments:
+          - "prod"  # Target environment, like "prod" or others
+      rolloutPolicy:
+        maxConcurrent: 1   # Maximum number of concurrent deployments
+        maxFailed: 1       # Maximum number of failed rollouts
+        successThreshold: 1  # Minimum number of successful rollouts
